@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitcoin Dashboard</title>
-    <!-- Chargement du design (Tailwind CSS) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chargement de React -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -18,7 +16,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- Icônes (SVG simplifiés) ---
+        // --- Icônes ---
         const IconBtc = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-3.94-.694m5.155-6.2L8.29 4.26m5.908 1.042.348-1.97M7.48 20.364l3.126-17.727"/></svg>;
         const IconDashboard = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>;
         const IconList = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>;
@@ -27,37 +25,69 @@
         const IconTrendingDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>;
         const IconDollar = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
         const IconSettings = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
-        const IconInfo = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+        const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
         const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 
         function App() {
+            // États
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [password, setPassword] = useState(localStorage.getItem('btc_pwd') || '');
+            const [loginError, setLoginError] = useState('');
+            const [isCheckingLogin, setIsCheckingLogin] = useState(false);
+
             const [activeTab, setActiveTab] = useState('dashboard');
             const [isModalOpen, setIsModalOpen] = useState(false);
-            const [isLoading, setIsLoading] = useState(true);
+            const [isLoading, setIsLoading] = useState(false);
             const [isSyncing, setIsSyncing] = useState(false);
             const [data, setData] = useState({ totals: {}, transactions: [] });
 
-            // --- TON URL GOOGLE APPS SCRIPT DÉFINITIVE ---
+            // --- 🚨 REMPLACE CECI PAR TON URL 🚨 ---
             const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz-98C0wFAf1E6EG3sOUhHIFFf3DyRUPOP6-ff9b3HDjySK7ToK4ckNYfe8maHqAn8b/exec";
 
-            // Fonction pour récupérer les données depuis Google Sheets
-            const fetchSheetData = async () => {
+            // Tentative de connexion automatique si le mot de passe est enregistré
+            useEffect(() => {
+                if (password && !isAuthenticated) {
+                    verifyAndFetchData(password);
+                }
+            }, []);
+
+            // Fonction pour vérifier le mot de passe ET charger les données
+            const verifyAndFetchData = async (pwd) => {
+                setIsCheckingLogin(true);
+                setIsLoading(true);
+                setLoginError('');
+
                 try {
-                    const response = await fetch(GOOGLE_WEBAPP_URL);
+                    // On envoie le mot de passe dans l'URL pour la lecture
+                    const response = await fetch(`${GOOGLE_WEBAPP_URL}?pwd=${encodeURIComponent(pwd)}`);
                     const result = await response.json();
-                    setData(result);
+
+                    if (result.error) {
+                        // Accès refusé
+                        setLoginError("Mot de passe incorrect.");
+                        setIsAuthenticated(false);
+                        localStorage.removeItem('btc_pwd'); // On efface le mauvais mot de passe
+                    } else {
+                        // Accès autorisé
+                        setData(result);
+                        setIsAuthenticated(true);
+                        setPassword(pwd);
+                        localStorage.setItem('btc_pwd', pwd); // On mémorise le bon mot de passe
+                    }
                 } catch (error) {
                     console.error("Erreur de chargement :", error);
-                    alert("Impossible de charger les données depuis Google Sheets.");
+                    setLoginError("Erreur de connexion au serveur.");
                 } finally {
+                    setIsCheckingLogin(false);
                     setIsLoading(false);
                 }
             };
 
-            // Chargement initial
-            useEffect(() => {
-                fetchSheetData();
-            }, []);
+            const handleLoginSubmit = (e) => {
+                e.preventDefault();
+                const pwd = e.target.pwd.value;
+                verifyAndFetchData(pwd);
+            };
 
             const handleAddTransaction = async (e) => {
                 e.preventDefault();
@@ -67,34 +97,66 @@
                     invested: Number(formData.get('invested')),
                     btc: Number(formData.get('btc')),
                     fees: Number(formData.get('fees') || 0),
-                    remark: formData.get('remark') || ''
+                    remark: formData.get('remark') || '',
+                    pwd: password // On ajoute le mot de passe pour l'écriture !
                 };
 
                 setIsSyncing(true);
 
                 try {
-                    // 1. On envoie la transaction à Google
-                    await fetch(GOOGLE_WEBAPP_URL, {
+                    const response = await fetch(GOOGLE_WEBAPP_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(newTx)
                     });
                     
-                    // 2. On attend 1.5 secondes que Google Sheets fasse ses calculs
                     await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // 3. On recharge toutes les données fraîches !
-                    await fetchSheetData();
-                    
+                    await verifyAndFetchData(password); // On recharge les données
                     setIsModalOpen(false);
                 } catch (error) {
                     console.error(error);
-                    alert("Erreur de synchronisation.");
+                    alert("Erreur lors de l'enregistrement.");
                 } finally {
                     setIsSyncing(false);
                 }
             };
+
+            const handleLogout = () => {
+                localStorage.removeItem('btc_pwd');
+                setPassword('');
+                setIsAuthenticated(false);
+                setData({ totals: {}, transactions: [] });
+            };
+
+            // --- ÉCRAN DE CONNEXION ---
+            if (!isAuthenticated) {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                        <form onSubmit={handleLoginSubmit} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-sm w-full animate-in fade-in zoom-in-95 duration-300">
+                            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                                <IconLock />
+                            </div>
+                            <h2 className="text-2xl font-medium text-center text-gray-800 mb-2">Accès Sécurisé</h2>
+                            <p className="text-sm text-gray-500 text-center mb-8">Veuillez entrer le mot de passe pour accéder à votre dashboard.</p>
+                            
+                            <input 
+                                type="password" 
+                                name="pwd" 
+                                required
+                                placeholder="Mot de passe..." 
+                                className="w-full px-5 py-3 mb-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-center text-lg" 
+                            />
+                            
+                            {loginError && <p className="text-red-500 text-sm text-center mb-4">{loginError}</p>}
+                            
+                            <button type="submit" disabled={isCheckingLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors flex justify-center items-center">
+                                {isCheckingLogin ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "Déverrouiller"}
+                            </button>
+                        </form>
+                    </div>
+                );
+            }
 
             // Écran de chargement avec animation
             if (isLoading) {
@@ -102,7 +164,7 @@
                     <div className="min-h-screen flex items-center justify-center bg-gray-50">
                         <div className="text-center">
                             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-gray-500 font-medium animate-pulse">Synchronisation avec Google Sheets...</p>
+                            <p className="text-gray-500 font-medium animate-pulse">Chargement sécurisé...</p>
                         </div>
                     </div>
                 );
@@ -114,44 +176,38 @@
 
             return (
                 <div className="pb-24 animate-in fade-in duration-500">
-                    {/* Header */}
                     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
                         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
                             <div className="flex items-center space-x-2">
-                                <div className="bg-blue-600 p-2 rounded-lg text-white">
-                                    <IconBtc />
-                                </div>
+                                <div className="bg-blue-600 p-2 rounded-lg text-white"><IconBtc /></div>
                                 <h1 className="text-xl font-medium text-gray-700 tracking-tight">Portefeuille BTC</h1>
                             </div>
-                            <div className="flex items-center text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                                <span className="hidden sm:inline mr-2">Cours Actuel:</span>
-                                <span className="text-gray-800 font-semibold">{totals.currentPrice}</span>
+                            <div className="flex items-center space-x-4">
+                                <div className="hidden sm:flex items-center text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+                                    <span className="mr-2">Cours Actuel:</span>
+                                    <span className="text-gray-800 font-semibold">{totals.currentPrice}</span>
+                                </div>
+                                <button onClick={handleLogout} className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">Déconnexion</button>
                             </div>
                         </div>
                     </header>
 
-                    {/* Onglets */}
                     <div className="bg-white shadow-sm mb-6">
                         <div className="max-w-5xl mx-auto px-4 flex">
                             <button onClick={() => setActiveTab('dashboard')} className={`flex-1 sm:flex-none flex items-center justify-center space-x-2 py-4 px-6 border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-blue-600 text-blue-600 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                                <IconDashboard />
-                                <span>Vue d'ensemble</span>
+                                <IconDashboard /><span>Vue d'ensemble</span>
                             </button>
                             <button onClick={() => setActiveTab('transactions')} className={`flex-1 sm:flex-none flex items-center justify-center space-x-2 py-4 px-6 border-b-2 transition-colors ${activeTab === 'transactions' ? 'border-blue-600 text-blue-600 font-medium' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                                <IconList />
-                                <span>Transactions ({transactions.length})</span>
+                                <IconList /><span>Transactions ({transactions.length})</span>
                             </button>
                         </div>
                     </div>
 
                     <main className="max-w-5xl mx-auto px-4">
-                        {/* Tab: Dashboard */}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6">
                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                                        <IconBtc className="w-48 h-48" />
-                                    </div>
+                                    <div className="absolute top-0 right-0 p-8 opacity-5"><IconBtc className="w-48 h-48" /></div>
                                     <p className="text-sm font-medium text-gray-500 uppercase mb-1">Valeur Actuelle Totale</p>
                                     <h2 className="text-4xl sm:text-5xl font-light text-gray-900 mb-6">{totals.currentValue || '---'}</h2>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
@@ -197,7 +253,6 @@
                             </div>
                         )}
 
-                        {/* Tab: Transactions */}
                         {activeTab === 'transactions' && (
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -232,16 +287,10 @@
                         )}
                     </main>
 
-                    {/* Bouton Ajouter */}
-                    <button 
-                        onClick={() => setIsModalOpen(true)}
-                        className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center space-x-2 z-20"
-                    >
-                        <IconPlus />
-                        <span className="hidden sm:inline font-medium pr-2">Ajouter</span>
+                    <button onClick={() => setIsModalOpen(true)} className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center space-x-2 z-20">
+                        <IconPlus /><span className="hidden sm:inline font-medium pr-2">Ajouter</span>
                     </button>
 
-                    {/* Modale Ajout */}
                     {isModalOpen && (
                         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
                             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -250,34 +299,17 @@
                                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                                 </div>
                                 <form onSubmit={handleAddTransaction} className="p-6 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                        <input required name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" />
-                                    </div>
+                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Date</label><input required name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" /></div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Investi (CHF)</label>
-                                            <input required name="invested" type="number" step="0.01" min="0" placeholder="0.00" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Avoir (BTC)</label>
-                                            <input required name="btc" type="number" step="0.00000001" min="0" placeholder="0.00" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" />
-                                        </div>
+                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Investi (CHF)</label><input required name="invested" type="number" step="0.01" min="0" placeholder="0.00" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" /></div>
+                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Avoir (BTC)</label><input required name="btc" type="number" step="0.00000001" min="0" placeholder="0.00" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" /></div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Frais (CHF)</label>
-                                        <input name="fees" type="number" step="0.01" min="0" defaultValue="0" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Remarque</label>
-                                        <input name="remark" type="text" placeholder="Optionnel..." className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" />
-                                    </div>
+                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Frais (CHF)</label><input name="fees" type="number" step="0.01" min="0" defaultValue="0" className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" /></div>
+                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Remarque</label><input name="remark" type="text" placeholder="Optionnel..." className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-blue-500" /></div>
                                     <div className="pt-4 flex space-x-3">
                                         <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium">Annuler</button>
                                         <button type="submit" disabled={isSyncing} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium flex justify-center items-center">
-                                            {isSyncing ? (
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            ) : <><span className="mr-2"><IconSave /></span> Enregistrer</>}
+                                            {isSyncing ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><span className="mr-2"><IconSave /></span> Enregistrer</>}
                                         </button>
                                     </div>
                                 </form>
