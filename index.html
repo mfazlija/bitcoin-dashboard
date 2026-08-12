@@ -29,7 +29,6 @@
         const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 
         function App() {
-            // États
             const [isAuthenticated, setIsAuthenticated] = useState(false);
             const [password, setPassword] = useState(localStorage.getItem('btc_pwd') || '');
             const [loginError, setLoginError] = useState('');
@@ -41,38 +40,32 @@
             const [isSyncing, setIsSyncing] = useState(false);
             const [data, setData] = useState({ totals: {}, transactions: [] });
 
-            // --- 🚨 REMPLACE CECI PAR TON URL 🚨 ---
             const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz-98C0wFAf1E6EG3sOUhHIFFf3DyRUPOP6-ff9b3HDjySK7ToK4ckNYfe8maHqAn8b/exec";
 
-            // Tentative de connexion automatique si le mot de passe est enregistré
             useEffect(() => {
                 if (password && !isAuthenticated) {
                     verifyAndFetchData(password);
                 }
             }, []);
 
-            // Fonction pour vérifier le mot de passe ET charger les données
             const verifyAndFetchData = async (pwd) => {
                 setIsCheckingLogin(true);
                 setIsLoading(true);
                 setLoginError('');
 
                 try {
-                    // On envoie le mot de passe dans l'URL pour la lecture
                     const response = await fetch(`${GOOGLE_WEBAPP_URL}?pwd=${encodeURIComponent(pwd)}`);
                     const result = await response.json();
 
                     if (result.error) {
-                        // Accès refusé
                         setLoginError("Mot de passe incorrect.");
                         setIsAuthenticated(false);
-                        localStorage.removeItem('btc_pwd'); // On efface le mauvais mot de passe
+                        localStorage.removeItem('btc_pwd');
                     } else {
-                        // Accès autorisé
                         setData(result);
                         setIsAuthenticated(true);
                         setPassword(pwd);
-                        localStorage.setItem('btc_pwd', pwd); // On mémorise le bon mot de passe
+                        localStorage.setItem('btc_pwd', pwd);
                     }
                 } catch (error) {
                     console.error("Erreur de chargement :", error);
@@ -98,13 +91,13 @@
                     btc: Number(formData.get('btc')),
                     fees: Number(formData.get('fees') || 0),
                     remark: formData.get('remark') || '',
-                    pwd: password // On ajoute le mot de passe pour l'écriture !
+                    pwd: password
                 };
 
                 setIsSyncing(true);
 
                 try {
-                    const response = await fetch(GOOGLE_WEBAPP_URL, {
+                    await fetch(GOOGLE_WEBAPP_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +105,7 @@
                     });
                     
                     await new Promise(resolve => setTimeout(resolve, 1500));
-                    await verifyAndFetchData(password); // On recharge les données
+                    await verifyAndFetchData(password);
                     setIsModalOpen(false);
                 } catch (error) {
                     console.error(error);
@@ -129,7 +122,6 @@
                 setData({ totals: {}, transactions: [] });
             };
 
-            // --- ÉCRAN DE CONNEXION ---
             if (!isAuthenticated) {
                 return (
                     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -158,7 +150,6 @@
                 );
             }
 
-            // Écran de chargement avec animation
             if (isLoading) {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -180,14 +171,15 @@
                         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                                 <div className="bg-blue-600 p-2 rounded-lg text-white"><IconBtc /></div>
-                                <h1 className="text-xl font-medium text-gray-700 tracking-tight">Portefeuille BTC</h1>
+                                <h1 className="text-lg sm:text-xl font-medium text-gray-700 tracking-tight">Portefeuille BTC</h1>
                             </div>
-                            <div className="flex items-center space-x-4">
-                                <div className="hidden sm:flex items-center text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                                    <span className="mr-2">Cours Actuel:</span>
+                            <div className="flex items-center space-x-2 sm:space-x-4">
+                                {/* Affichage du cours sur TOUS les écrans (mobile inclus) */}
+                                <div className="flex items-center text-xs sm:text-sm font-medium text-gray-500 bg-gray-100 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full">
+                                    <span className="hidden xs:inline mr-1 text-gray-400">Cours:</span>
                                     <span className="text-gray-800 font-semibold">{totals.currentPrice}</span>
                                 </div>
-                                <button onClick={handleLogout} className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">Déconnexion</button>
+                                <button onClick={handleLogout} className="text-xs sm:text-sm font-medium text-gray-500 hover:text-red-600 transition-colors">Déconnexion</button>
                             </div>
                         </div>
                     </header>
