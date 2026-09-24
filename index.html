@@ -15,7 +15,7 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // Helper sécurisé contre les crashs de localStorage sur mobile
+    // Helper stockage sécurisé
     const storage = {
       get: (k) => {
         try { return localStorage.getItem(k) || ''; } catch (e) { return ''; }
@@ -27,6 +27,43 @@
         try { localStorage.removeItem(k); } catch (e) {}
       }
     };
+
+    // Client JSONP robuste : supprime totalement les erreurs CORS sur Safari/Chrome mobile et desktop
+    function fetchJSONP(url, params = {}) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+        const script = document.createElement('script');
+
+        const queryParams = new URLSearchParams(params);
+        queryParams.set('callback', callbackName);
+
+        const separator = url.includes('?') ? '&' : '?';
+        script.src = url + separator + queryParams.toString();
+
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error("Délai d'attente dépassé (timeout)."));
+        }, 12000);
+
+        function cleanup() {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("Erreur de communication avec Google Sheets."));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
 
     // Icônes
     const IconBtc = ({ className = "w-6 h-6" }) => (
@@ -57,7 +94,7 @@
     );
 
     function App() {
-      // Mets ton URL exacte de Web App Google Apps Script
+      // Ton URL exacte de Web App Google Apps Script
       const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx5fAY6Pg6vCJX1wHmdZkCr1FzrAeR0iylOEM5UtYaKfuSLsT5C7mRGZB9WeOTu9Rpj1A/exec";
 
       const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,7 +105,6 @@
       const [activeTab, setActiveTab] = useState('dashboard');
       const [selectedFilter, setSelectedFilter] = useState('Tous');
       const [data, setData] = useState({ indicators: {}, transactions: [] });
-      const [isLoading, setIsLoading] = useState(false);
       const [isModalOpen, setIsModalOpen] = useState(false);
       const [isSaving, setIsSaving] = useState(false);
 
@@ -80,15 +116,9 @@
 
       const loadBackendData = async (pwd) => {
         setIsAuthenticating(true);
-        setIsLoading(true);
         setLoginError('');
         try {
-          // redirect: 'follow' indispensable pour Safari mobile
-          const res = await fetch(`${GOOGLE_WEBAPP_URL}?pwd=${encodeURIComponent(pwd)}`, {
-            method: 'GET',
-            redirect: 'follow'
-          });
-          const json = await res.json();
+          const json = await fetchJSONP(GOOGLE_WEBAPP_URL, { pwd: pwd });
           if (json.error) {
             setLoginError(json.error);
             setIsAuthenticated(false);
@@ -100,11 +130,10 @@
             storage.set('btc_pwd_v3', pwd);
           }
         } catch (err) {
-          setLoginError("Erreur de connexion. Vérifiez la connexion ou le mot de passe.");
+          setLoginError(err.message || "Erreur de connexion.");
           setIsAuthenticated(false);
         } finally {
           setIsAuthenticating(false);
-          setIsLoading(false);
         }
       };
 
@@ -142,12 +171,11 @@
           await fetch(GOOGLE_WEBAPP_URL, {
             method: 'POST',
             mode: 'no-cors',
-            redirect: 'follow',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
 
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 2200));
           await loadBackendData(password);
           setIsModalOpen(false);
         } catch (err) {
@@ -162,7 +190,6 @@
         return data.transactions.filter(t => t.type === selectedFilter);
       }, [data.transactions, selectedFilter]);
 
-      // Écran d'authentification
       if (!isAuthenticated) {
         return (
           <div className="min-h-screen flex items-center justify-center p-4">
@@ -201,7 +228,6 @@
 
       return (
         <div className="pb-24">
-          {/* Header Mobile / Desktop */}
           <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
             <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
@@ -226,7 +252,6 @@
             </div>
           </header>
 
-          {/* Onglets */}
           <div className="bg-white border-b border-slate-200 mb-6">
             <div className="max-w-6xl mx-auto px-4 flex space-x-6">
               <button
@@ -253,7 +278,6 @@
           <main className="max-w-6xl mx-auto px-4">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Carte Solde Principal */}
                 <div className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200/80 shadow-xs">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
@@ -297,7 +321,6 @@
                   </div>
                 </div>
 
-                {/* Structure des Frais */}
                 <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cumul Frais Indicatifs</span>
@@ -321,7 +344,6 @@
 
             {activeTab === 'transactions' && (
               <div className="space-y-4">
-                {/* Filtres */}
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {['Tous', 'Achat', 'Vente', 'Envoi', 'Réception'].map((f) => (
                     <button
@@ -338,7 +360,6 @@
                   ))}
                 </div>
 
-                {/* Table complète 11 colonnes */}
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
@@ -396,7 +417,6 @@
             )}
           </main>
 
-          {/* Bouton d'ajout */}
           <button
             onClick={() => setIsModalOpen(true)}
             className="fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-2xl shadow-lg hover:bg-orange-700 transition flex items-center space-x-2 z-40 active:scale-95"
@@ -405,7 +425,6 @@
             <span className="font-medium text-xs sm:text-sm hidden sm:inline pr-1">Opération</span>
           </button>
 
-          {/* Modale d'ajout intégrant Colonnes H et I */}
           {isModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3">
               <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-slate-100 max-h-[92vh] overflow-y-auto">
@@ -489,7 +508,6 @@
                     </div>
                   </div>
 
-                  {/* Champs Colonnes H et I */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Colonne H</label>
