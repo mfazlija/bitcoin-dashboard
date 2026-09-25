@@ -15,7 +15,6 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // Helper stockage sécurisé
     const storage = {
       get: (k) => {
         try { return localStorage.getItem(k) || ''; } catch (e) { return ''; }
@@ -28,27 +27,27 @@
       }
     };
 
-    // Client JSONP robuste : supprime totalement les erreurs CORS sur Safari/Chrome mobile et desktop
-    function fetchJSONP(url, params = {}) {
+    // Client de communication compatible Edge mobile, Chrome et Safari
+    function fetchBackendData(url, pwd) {
       return new Promise((resolve, reject) => {
-        const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+        // Tentative 1 : JSONP standard
+        const callbackName = 'cb_' + Math.round(100000 * Math.random());
         const script = document.createElement('script');
-
-        const queryParams = new URLSearchParams(params);
-        queryParams.set('callback', callbackName);
-
-        const separator = url.includes('?') ? '&' : '?';
-        script.src = url + separator + queryParams.toString();
+        let resolved = false;
 
         const timeoutId = setTimeout(() => {
-          cleanup();
-          reject(new Error("Délai d'attente dépassé (timeout)."));
-        }, 12000);
+          if (!resolved) {
+            cleanup();
+            // Bascule sur fetch natif en cas de blocage script sur Edge mobile
+            fetchNative(url, pwd).then(resolve).catch(reject);
+          }
+        }, 5000);
 
         function cleanup() {
+          resolved = true;
+          clearTimeout(timeoutId);
           if (script.parentNode) script.parentNode.removeChild(script);
           delete window[callbackName];
-          clearTimeout(timeoutId);
         }
 
         window[callbackName] = function(data) {
@@ -58,11 +57,22 @@
 
         script.onerror = function() {
           cleanup();
-          reject(new Error("Erreur de communication avec Google Sheets."));
+          fetchNative(url, pwd).then(resolve).catch(reject);
         };
 
+        const sep = url.includes('?') ? '&' : '?';
+        script.src = `${url}${sep}pwd=${encodeURIComponent(pwd)}&callback=${callbackName}`;
         document.body.appendChild(script);
       });
+    }
+
+    async function fetchNative(url, pwd) {
+      const sep = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${sep}pwd=${encodeURIComponent(pwd)}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      return await res.json();
     }
 
     // Icônes
@@ -94,7 +104,6 @@
     );
 
     function App() {
-      // Ton URL exacte de Web App Google Apps Script
       const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx5fAY6Pg6vCJX1wHmdZkCr1FzrAeR0iylOEM5UtYaKfuSLsT5C7mRGZB9WeOTu9Rpj1A/exec";
 
       const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -110,15 +119,15 @@
 
       useEffect(() => {
         if (password) {
-          loadBackendData(password);
+          loadData(password);
         }
       }, []);
 
-      const loadBackendData = async (pwd) => {
+      const loadData = async (pwd) => {
         setIsAuthenticating(true);
         setLoginError('');
         try {
-          const json = await fetchJSONP(GOOGLE_WEBAPP_URL, { pwd: pwd });
+          const json = await fetchBackendData(GOOGLE_WEBAPP_URL, pwd);
           if (json.error) {
             setLoginError(json.error);
             setIsAuthenticated(false);
@@ -130,7 +139,7 @@
             storage.set('btc_pwd_v3', pwd);
           }
         } catch (err) {
-          setLoginError(err.message || "Erreur de connexion.");
+          setLoginError("Erreur de connexion. Vérifiez le mot de passe.");
           setIsAuthenticated(false);
         } finally {
           setIsAuthenticating(false);
@@ -140,7 +149,7 @@
       const handleLogin = (e) => {
         e.preventDefault();
         const pwdInput = e.target.pwd.value.trim();
-        loadBackendData(pwdInput);
+        loadData(pwdInput);
       };
 
       const handleLogout = () => {
@@ -160,8 +169,6 @@
           amountBTC: form.get('amountBTC') || 0,
           platformFees: form.get('platformFees') || 0,
           networkFees: form.get('networkFees') || 0,
-          colH: form.get('colH') || '',
-          colI: form.get('colI') || '',
           notes: form.get('notes') || '',
           pwd: password
         };
@@ -176,7 +183,7 @@
           });
 
           await new Promise(r => setTimeout(r, 2200));
-          await loadBackendData(password);
+          await loadData(password);
           setIsModalOpen(false);
         } catch (err) {
           alert("Erreur lors de l'enregistrement de l'opération.");
@@ -198,7 +205,7 @@
                 <IconLock />
               </div>
               <h1 className="text-lg font-semibold text-center text-slate-900 mb-1">Bitcoin Portfolio</h1>
-              <p className="text-xs text-center text-slate-500 mb-5">Veuillez vous authentifier</p>
+              <p className="text-xs text-center text-slate-500 mb-5">Authentification requise</p>
 
               <input
                 type="password"
@@ -229,14 +236,14 @@
       return (
         <div className="pb-24">
           <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-            <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <div className="bg-orange-600 p-2 rounded-xl text-white">
                   <IconBtc className="w-5 h-5" />
                 </div>
                 <div>
                   <h1 className="text-sm sm:text-base font-semibold text-slate-900 leading-tight">Bitcoin v3</h1>
-                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Normalisé A-K</span>
+                  <span className="text-[10px] text-slate-400 font-mono">11 colonnes</span>
                 </div>
               </div>
 
@@ -253,7 +260,7 @@
           </header>
 
           <div className="bg-white border-b border-slate-200 mb-6">
-            <div className="max-w-6xl mx-auto px-4 flex space-x-6">
+            <div className="max-w-7xl mx-auto px-4 flex space-x-6">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`flex items-center space-x-2 py-3.5 border-b-2 text-xs sm:text-sm font-medium transition ${
@@ -275,7 +282,7 @@
             </div>
           </div>
 
-          <main className="max-w-6xl mx-auto px-4">
+          <main className="max-w-7xl mx-auto px-4">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200/80 shadow-xs">
@@ -360,27 +367,29 @@
                   ))}
                 </div>
 
+                {/* Tableau complet sans colonnes masquées (défilement horizontal sur mobile) */}
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
+                    <table className="w-full text-left text-xs border-collapse whitespace-nowrap min-w-[950px]">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold">
                           <th className="py-3 px-3">Date</th>
                           <th className="py-3 px-2.5">Type</th>
                           <th className="py-3 px-3 text-right">Montant CHF</th>
                           <th className="py-3 px-3 text-right">Montant BTC</th>
-                          <th className="py-3 px-3 text-right hidden sm:table-cell">Prix Exéc.</th>
-                          <th className="py-3 px-2.5 text-right hidden md:table-cell">Frais Plat.</th>
-                          <th className="py-3 px-2.5 text-right hidden md:table-cell">Frais Rés.</th>
-                          <th className="py-3 px-3 text-right hidden lg:table-cell">Col. H</th>
-                          <th className="py-3 px-3 text-right hidden lg:table-cell">Col. I</th>
-                          <th className="py-3 px-3 text-right">Solde Cumulé</th>
-                          <th className="py-3 px-4 hidden xl:table-cell">Notes</th>
+                          <th className="py-3 px-3 text-right">Prix Exéc.</th>
+                          <th className="py-3 px-2.5 text-right">Frais Plat.</th>
+                          <th className="py-3 px-2.5 text-right">Frais Rés.</th>
+                          <th className="py-3 px-3 text-right bg-slate-100/50">Valeur actuelle</th>
+                          <th className="py-3 px-3 text-right bg-slate-100/50">Résultat</th>
+                          <th className="py-3 px-3 text-right font-semibold text-slate-700">Solde Cumulé</th>
+                          <th className="py-3 px-4">Notes</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredTransactions.map((t) => {
                           const isPositiveBtc = !t.amountBTC.includes('-');
+                          const isPositiveRes = !t.resultCHF.includes('-');
                           let badgeBg = "bg-slate-100 text-slate-700";
                           if (t.type === "Achat") badgeBg = "bg-emerald-50 text-emerald-700";
                           if (t.type === "Vente") badgeBg = "bg-rose-50 text-rose-700";
@@ -399,13 +408,15 @@
                               <td className={`py-2.5 px-3 text-right font-mono font-medium ${isPositiveBtc ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {t.amountBTC}
                               </td>
-                              <td className="py-2.5 px-3 text-right text-slate-500 hidden sm:table-cell">{t.execPrice || '—'}</td>
-                              <td className="py-2.5 px-2.5 text-right text-slate-400 hidden md:table-cell">{t.platformFees || '—'}</td>
-                              <td className="py-2.5 px-2.5 text-right text-slate-400 hidden md:table-cell">{t.networkFees || '—'}</td>
-                              <td className="py-2.5 px-3 text-right text-slate-500 hidden lg:table-cell">{t.colH || '—'}</td>
-                              <td className="py-2.5 px-3 text-right text-slate-500 hidden lg:table-cell">{t.colI || '—'}</td>
-                              <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-700">{t.cumulBTC}</td>
-                              <td className="py-2.5 px-4 text-slate-400 truncate max-w-xs hidden xl:table-cell">{t.notes || '—'}</td>
+                              <td className="py-2.5 px-3 text-right text-slate-500">{t.execPrice || '—'}</td>
+                              <td className="py-2.5 px-2.5 text-right text-slate-400">{t.platformFees || '—'}</td>
+                              <td className="py-2.5 px-2.5 text-right text-slate-400">{t.networkFees || '—'}</td>
+                              <td className="py-2.5 px-3 text-right font-medium text-slate-700 bg-slate-50/40">{t.currentValueCHF || '—'}</td>
+                              <td className={`py-2.5 px-3 text-right font-medium bg-slate-50/40 ${isPositiveRes ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {t.resultCHF || '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-800">{t.cumulBTC}</td>
+                              <td className="py-2.5 px-4 text-slate-400 truncate max-w-xs">{t.notes || '—'}</td>
                             </tr>
                           );
                         })}
@@ -508,25 +519,8 @@
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Colonne H</label>
-                      <input
-                        type="text"
-                        name="colH"
-                        placeholder="Valeur H..."
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Colonne I</label>
-                      <input
-                        type="text"
-                        name="colI"
-                        placeholder="Valeur I..."
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white outline-none"
-                      />
-                    </div>
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/60 text-[11px] text-amber-800 leading-relaxed">
+                    <strong>Note :</strong> "Valeur actuelle" et "Résultat" sont automatiquement calculés par Google Sheets avec le cours en direct.
                   </div>
 
                   <div>
